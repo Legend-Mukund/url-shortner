@@ -1,21 +1,28 @@
-# Use an official Go image.
-# https://hub.docker.com/_/golang
-FROM golang:1.22.6
+# Use the official Golang image as the base image.
+FROM golang:1.18-alpine AS build
 
-# Set the working directory to /app.
+# Set the working directory in the container.
 WORKDIR /app
 
 # Copy the current directory contents into the container at /app.
 COPY . /app
 
-# Run go get to download the dependencies.
-RUN go get -d -v .
+# Download and install dependencies.
+RUN go mod download
 
-# Build the Go binary using go build.
+# Build the binary.
 RUN go build -o bin/goblog cmd/main.go
 
-# Expose port 8080 to the world.
+# Use a smaller image to deploy the application.
+FROM alpine:latest
+
+# Set the working directory in the container.
+WORKDIR /app
+
+# Copy the binary from the build stage.
+COPY --from=build /app/gobot .
+
 EXPOSE 8080
 
-# Set the entrypoint to be the goblog binary.
-ENTRYPOINT ["/app/bin/goblog"]
+# Run the binary.
+CMD ["/app/bin/goblog"]
